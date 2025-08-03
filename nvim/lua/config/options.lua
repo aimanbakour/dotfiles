@@ -11,3 +11,7 @@ vim.diagnostic.config({
   signs = true,         -- Show signs in gutter
   underline = true,     -- Keep underlines
 })
+
+-- Set column guide for better focus (ADHD-friendly)
+vim.opt.colorcolumn = "80"
+vim.opt.textwidth = 80     -- Auto wrap at 80 characters

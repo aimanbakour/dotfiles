@@ -32,11 +32,11 @@ return {
     end, { desc = "Harpoon file 4" })
 
 
-    -- Navigate between harpoon files (Vim convention)
-    vim.keymap.set("n", "]h", function()
+    -- Navigate between harpoon files (non-conflicting keys)
+    vim.keymap.set("n", "<C-n>", function()
       harpoon:list():next()
     end, { desc = "Harpoon next" })
-    vim.keymap.set("n", "[h", function()
+    vim.keymap.set("n", "<C-p>", function()
       harpoon:list():prev()
     end, { desc = "Harpoon previous" })
   end,

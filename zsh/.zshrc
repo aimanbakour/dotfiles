@@ -569,3 +569,6 @@ alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 # Tmux
 alias tmuxm='tmux new-session -A -s main'
 
+alias vim='nvim'
+
+alias ruff80="ruff format --line-length=80"
