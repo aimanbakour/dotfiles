@@ -5,12 +5,8 @@
 -- Save file shortcuts
 vim.keymap.set("n", "<leader>w", "<cmd>w<cr>", { desc = "Save File" })
 
--- Global file search (system-wide)
-vim.keymap.set("n", "<leader>fG", function()
-  require("fzf-lua").files({ cwd = "~" })
-end, { desc = "Find files globally (home directory)" })
+-- Centered scrolling (Primeagen style)
+vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Scroll up and center" })
+vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Scroll down and center" })
 
--- Code projects search
-vim.keymap.set("n", "<leader>fC", function()
-  require("fzf-lua").files({ cwd = "~/Developer" })
-end, { desc = "Find files in code projects" })
+-- Custom fzf-lua keymaps are now in lua/plugins/fzf-lua.lua

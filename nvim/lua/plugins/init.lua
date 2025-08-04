@@ -1,10 +1,4 @@
 -- Custom plugins configuration
 return {
-  {
-    "ellisonleao/gruvbox.nvim",
-    priority = 1000,
-    config = function()
-      vim.cmd.colorscheme "gruvbox"
-    end
-  }
+  -- Add other non-theme plugins here if needed
 }
