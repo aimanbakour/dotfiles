@@ -59,12 +59,13 @@ return {
   {
     "catppuccin/nvim",
     name = "catppuccin",
-    priority = 1000,
+    priority = 1001, -- Higher priority than other themes
+    lazy = false, -- Load immediately
     config = function()
       require("catppuccin").setup({
         flavour = "frappe", -- latte, frappe, macchiato, mocha
       })
-      vim.cmd.colorscheme "catppuccin-frappe"
+      vim.cmd.colorscheme("catppuccin-frappe")
     end
   }
 }
