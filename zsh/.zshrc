@@ -30,11 +30,9 @@ export XDG_DOWNLOADS="$HOME/downloads"
 export XDG_DATA_HOME="$HOME/.local/share"
 export XDG_STATE_HOME="$HOME/.local/state"
 
-export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
 
-command -v pyenv >/dev/null 2>&1 && eval "$(pyenv init -)"
-
+# Add uv Python to PATH (before homebrew)
+export PATH="$HOME/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin:$PATH"
 # Add Homebrew to PATH if missing (add to top of .zshrc)
 export PATH="/opt/homebrew/bin:$PATH"  # For Apple Silicon Macs
 export PATH="$HOME/.volta/bin:$PATH"
