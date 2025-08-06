@@ -83,6 +83,9 @@ add-zsh-hook precmd _load_plugins_deferred
 # Set up fzf key bindings and fuzzy completion
 source <(fzf --zsh)
 
+# Initialize zoxide (z command for smart directory jumping)
+eval "$(zoxide init zsh)"
+
 # Optimized compinit - only rebuild if older than 24h
 autoload -U compinit
 if [[ -n ${XDG_CONFIG_HOME:-$HOME/.config}/zsh/.zcompdump(#qN.mh+24) ]]; then
@@ -166,7 +169,6 @@ extract() {
   fi
 }
 
-
 function dev() {
     local dir
     dir=$(fd --type d --max-depth 1 . ~/Developer/ | fzf --preview 'eza --icons --tree --level=1 {}')
@@ -205,10 +207,7 @@ function netspeed() {
 # Tailscale
 alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 
-# Tmux
 alias tmuxm='tmux new-session -A -s main'
-
 alias vim='nvim'
-
 alias ruff80="ruff format --line-length=80"
 

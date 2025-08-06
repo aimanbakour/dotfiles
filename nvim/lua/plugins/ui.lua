@@ -5,14 +5,13 @@ return {
     "akinsho/bufferline.nvim",
     enabled = false,
   },
-  -- Configure noice.nvim to use normal cmdline instead of floating
+  -- Disable noice.nvim to get classic command line
   {
     "folke/noice.nvim",
-    opts = {
-      cmdline = {
-        enabled = true,
-        view = "cmdline", -- Use normal cmdline instead of cmdline_popup
-      },
-    },
+    enabled = false,
+  },
+  {
+    "nvim-lualine/lualine.nvim",
+    enabled = true,
   },
 }

@@ -9,6 +9,7 @@ disabled = true
 disabled = false
 success_symbol = '[](blue)'
 error_symbol = '[](red)'
+vimcmd_symbol ='[V](blue)'
 
 [package]
 disabled = true

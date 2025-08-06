@@ -55,44 +55,10 @@ require("lazy").setup({
   },
 })
 
--- My commands
-vim.keymap.set("n", "<left>", '<cmd>echo "Use h to move!!"<CR>')
-vim.keymap.set("n", "<right>", '<cmd>echo "Use l to move!!"<CR>')
-vim.keymap.set("n", "<up>", '<cmd>echo "Use k to move!!"<CR>')
-vim.keymap.set("n", "<down>", '<cmd>echo "Use j to move!!"<CR>')
-
-vim.api.nvim_create_user_command("Gs", "!git status", {})
-vim.api.nvim_create_user_command("Gp", "! git add . && git commit -am 'update' && git push", {})
-vim.api.nvim_create_user_command("Glo", "! git log --oneline", {})
-vim.api.nvim_create_user_command("Gcm", function()
-  local message = vim.fn.input("Commit message: ")
-  if message ~= "" then
-    vim.cmd('!git commit -m "' .. message .. '"')
-  else
-    print("Commit cancelled")
-  end
-end, {})
--- Create a new branch and switch to it
-vim.api.nvim_create_user_command("Gb", function()
-  local branch = vim.fn.input("Branch name: ")
-  if branch == "" then
-    print("Branch creation cancelled")
-    return
-  end
-  vim.cmd("!git checkout -b " .. branch)
-end, {})
-
-vim.api.nvim_create_autocmd("TermOpen", {
-  group = vim.api.nvim_create_augroup("CustomTermOpen", { clear = true }),
-  callback = function()
-    vim.opt.number = false
-    vim.opt.relativenumber = false
-  end,
-})
-
-vim.keymap.set("n", "<space>tt", function()
-  vim.cmd.vnew()
-  vim.cmd.term()
-  vim.cmd.wincmd("J")
-  vim.api.nvim_win_set_height(0, 5)
-end)
+-- vim.api.nvim_create_autocmd("TermOpen", {
+--   group = vim.api.nvim_create_augroup("CustomTermOpen", { clear = true }),
+--   callback = function()
+--     vim.opt.number = false
+--     vim.opt.relativenumber = false
+--   end,
+-- })

@@ -27,9 +27,13 @@ return {
       },
     })
     
-    -- Keymap for opening oil
+    -- Keymaps for opening oil
     vim.keymap.set("n", "<leader>o", function()
-      require("oil").open()
-    end, { desc = "Open oil file manager" })
+      require("oil").open(vim.fn.expand("%:p:h"))
+    end, { desc = "Open current file's directory" })
+    
+    vim.keymap.set("n", "-", function()
+      require("oil").open(vim.fn.expand("%:p:h"))
+    end, { desc = "Open parent directory" })
   end,
 }
