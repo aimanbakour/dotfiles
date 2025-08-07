@@ -1,3 +1,13 @@
+-- Transparent background function (from Prime)
+function ColorMyPencils(color)
+    color = color or "catppuccin-frappe" -- Keep your default
+    vim.cmd.colorscheme(color)
+    
+    -- Make background transparent
+    vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
+    vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
+end
+
 return {
   {
     "morhetz/gruvbox",
@@ -14,8 +24,11 @@ return {
       require("rose-pine").setup({
         variant = "moon",
         dark_variant = "moon",
-        disable_background = false,
-        disable_float_background = false,
+        disable_background = true, -- Enable transparency like Prime
+        disable_float_background = true,
+        styles = {
+          italic = false, -- Disable italics like Prime
+        },
       })
     end
   },
@@ -65,7 +78,7 @@ return {
       require("catppuccin").setup({
         flavour = "frappe", -- latte, frappe, macchiato, mocha
       })
-      vim.cmd.colorscheme("catppuccin-frappe")
+      ColorMyPencils() -- Apply catppuccin-frappe with transparent background
     end
   }
 }

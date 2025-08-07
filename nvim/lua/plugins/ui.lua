@@ -10,8 +10,9 @@ return {
     "folke/noice.nvim",
     enabled = false,
   },
+  -- Disable lualine to use built-in statusline (Prime style)
   {
     "nvim-lualine/lualine.nvim",
-    enabled = true,
+    enabled = false,
   },
 }
