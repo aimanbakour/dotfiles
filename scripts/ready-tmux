@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# Rename the first window to 'nvim' and open the project
+tmux rename-window -t 1 'nvim'
+tmux send-keys -t 1 'nvim .' c-m
+
+# Create scratchpad window (just terminal)
+tmux neww -n 'scratchpad'
+
+# Go back to nvim window
+tmux select-window -t 1
+

@@ -2,6 +2,13 @@
 -- Default options that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
 -- Add any additional options here
 
+-- Line wrapping and display options
+vim.opt.wrap = true -- Enable line wrapping
+vim.opt.linebreak = true -- Break at word boundaries
+vim.opt.showbreak = "  ⤷ "
+vim.opt.textwidth = 80 -- Highlight long lines
+vim.opt.colorcolumn = "80" -- Show 80-char guide line
+
 -- Disable lua language server to prevent warning
 vim.g.lazyvim_lua_ls = false
 
@@ -11,10 +18,6 @@ vim.diagnostic.config({
   signs = true, -- Show signs in gutter
   underline = true, -- Keep underlines
 })
-
--- Set column guide for better focus (ADHD-friendly)
-vim.opt.colorcolumn = "80"
-vim.opt.textwidth = 80 -- Auto wrap at 80 characters
 
 -- Settings from Prime
 vim.opt.guicursor = "" -- Disable cursor shape changes
@@ -27,8 +30,6 @@ vim.opt.softtabstop = 4 -- Tab key inserts 4 spaces
 vim.opt.shiftwidth = 4 -- Indentation uses 4 spaces
 vim.opt.expandtab = true -- Convert tabs to spaces
 vim.opt.smartindent = true -- Auto-indent new lines intelligently
-
-vim.opt.wrap = false -- Disable line wrapping
 
 vim.opt.swapfile = false -- No .swp files
 vim.opt.backup = false -- No backup files
@@ -49,5 +50,21 @@ vim.opt.updatetime = 50 -- Faster updates (default 4000ms)
 -- Show mode in command line (like Prime)
 vim.opt.showmode = true -- Show INSERT, VISUAL, etc. in command line
 
--- Custom statusline (Prime style) 
+-- Custom statusline (Prime style)
 vim.opt.statusline = "%F %h%w%m%r %=                    %(%l,%c%V         %P%)"
+
+-- Fix bash script detection for shebang
+vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
+  pattern = "*",
+  callback = function()
+    local first_line = vim.fn.getline(1)
+    if first_line:match("^#!/usr/bin/env bash") then
+      vim.bo.filetype = "bash"
+    end
+  end,
+})
+
+-- Toggle diagnostics command
+vim.api.nvim_create_user_command("DiagnosticsToggle", function()
+  vim.diagnostic.enable(not vim.diagnostic.is_enabled())
+end, {})

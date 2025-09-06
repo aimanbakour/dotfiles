@@ -83,6 +83,8 @@ add-zsh-hook precmd _load_plugins_deferred
 # Set up fzf key bindings and fuzzy completion
 source <(fzf --zsh)
 
+# export FZF_DEFAULT_OPTS="--height=40%"
+
 # Initialize zoxide (z command for smart directory jumping)
 eval "$(zoxide init zsh)"
 
@@ -95,31 +97,10 @@ else
 fi
 source /opt/homebrew/share/fzf-tab/fzf-tab.plugin.zsh
 
-# FZF Configuration and aliases
-show_file_or_dir_preview="if [ -d {} ]; then eza --tree --color=always {} | head -200; else bat -n --color=always --line-range :500 {}; fi"
-
-export FZF_CTRL_T_OPTS="--preview '$show_file_or_dir_preview'"
-export FZF_ALT_C_OPTS="--preview 'eza --tree --color=always {} | head -200'"
-
-# Advanced customization of fzf options via _fzf_comprun function
-# - The first argument to the function is the name of the command.
-# - You should make sure to pass the rest of the arguments to fzf.
-_fzf_comprun() {
-  local command=$1
-  shift
-
-  case "$command" in
-    cd)           fzf --preview 'eza --tree --color=always {} | head -200' "$@" ;;
-    export|unset) fzf --preview "eval 'echo ${}'"         "$@" ;;
-    ssh)          fzf --preview 'dig {}'                   "$@" ;;
-    *)            fzf --preview "$show_file_or_dir_preview" "$@" ;;
-  esac
-}
-
 # Better directory listings with eza (modern replacement for ls)
 if _has_cmd eza; then
     # Core aliases
-    alias ls='eza --icons --group-directories-first'
+    alias ls='eza --icons --group-directories-first -a'
     alias ll='eza -la --no-user --time-style=+%m/%d-%H:%M'
     # Tree views
     alias lt='eza --icons --tree --level=2'
@@ -133,17 +114,22 @@ type starship_zle-keymap-select >/dev/null || \
     eval "$(starship init zsh)"
   }
 
-# Enhanced history search
-# TODO deleted fh
-bindkey '^R' fzf-history-widget  # Bind Ctrl-R to your existing fh function
 
 export EDITOR='nvim'
 export VISUAL='nvim'
 
-# Enable vim mode in zsh
-bindkey -v
+# Enable emacs mode in zsh  
+bindkey -e
 # Reduce vim mode switching delay
 export KEYTIMEOUT=1
+
+# Enable edit-command-line
+autoload -U edit-command-line
+zle -N edit-command-line
+bindkey '^X^E' edit-command-line
+
+# Tmux sessionizer
+bindkey -s '^f' 'tmux-sessionizer\n'
 
 
 mkcd() { mkdir -p "$@" && cd "$@"; }

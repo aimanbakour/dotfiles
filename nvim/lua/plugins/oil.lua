@@ -23,7 +23,7 @@ return {
       skip_confirm_for_simple_edits = true,
       -- Show hidden files by default (toggle with g.)
       view_options = {
-        show_hidden = false,
+        show_hidden = true,
       },
     })
     
