@@ -68,3 +68,16 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
 vim.api.nvim_create_user_command("DiagnosticsToggle", function()
   vim.diagnostic.enable(not vim.diagnostic.is_enabled())
 end, {})
+
+-- Completion toggle with blink.cmp
+-- vim.b.completion = false
+--
+-- Snacks.toggle({
+--   name = "Completion",
+--   get = function()
+--     return vim.b.completion
+--   end,
+--   set = function(state)
+--     vim.b.completion = state
+--   end,
+-- }):map("<leader>tc")

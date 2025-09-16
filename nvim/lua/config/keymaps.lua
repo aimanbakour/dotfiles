@@ -10,24 +10,24 @@ vim.keymap.set("n", "<leader>cx", "<cmd>!chmod +x %<CR>", { silent = true })
 
 -- Visual line movement (from Prime)
 vim.keymap.set(
-  "v",
-  "J",
-  ":m '>+1<CR>gv=gv",
-  { desc = "Move selected lines down" }
+	"v",
+	"J",
+	":m '>+1<CR>gv=gv",
+	{ desc = "Move selected lines down" }
 )
 vim.keymap.set(
-  "v",
-  "K",
-  ":m '<-2<CR>gv=gv",
-  { desc = "Move selected lines up" }
+	"v",
+	"K",
+	":m '<-2<CR>gv=gv",
+	{ desc = "Move selected lines up" }
 )
 
 -- Better navigation (from Prime)
 vim.keymap.set(
-  "n",
-  "J",
-  "mzJ`z",
-  { desc = "Join lines but keep cursor position" }
+	"n",
+	"J",
+	"mzJ`z",
+	{ desc = "Join lines but keep cursor position" }
 )
 vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Scroll up and center" })
 vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Scroll down and center" })
@@ -52,24 +52,28 @@ vim.keymap.set("n", "M", "m")
 
 -- Diagnostic toggle
 vim.keymap.set(
-  "n",
-  "<leader>td",
-  "<cmd>DiagnosticsToggle<cr>",
-  { desc = "Toggle diagnostics" }
+	"n",
+	"<leader>td",
+	"<cmd>DiagnosticsToggle<cr>",
+	{ desc = "Toggle diagnostics" }
 )
 
 -- FzfLua
 vim.keymap.set("n", "<leader>fs", "<cmd>FzfLua lsp_document_symbols<cr>", {
-  desc = "Find document symbols",
+	desc = "Find document symbols",
 })
 vim.keymap.set("n", "<leader>fd", "<cmd>FzfLua diagnostics_document<cr>", {
-  desc = "Find diagnostics locations",
+	desc = "Find diagnostics locations",
 })
 vim.keymap.set("n", "<leader>fm", "<cmd>FzfLua<cr>", {})
 -- Deleting existing ones from LazyVim
 vim.keymap.del("n", "<leader>ft")
 vim.keymap.del("n", "<leader>fT")
-vim.keymap.del("n", "<leader>fE")
 
 -- Solve symbol layer bleeding
 vim.cmd("cnoreabbrev { w")
+
+-- :w layer bleeding problem
+vim.keymap.set("n", "<C-s>", ":w<CR>", { noremap = true, silent = true })
+vim.keymap.set("i", "<C-s>", "<Esc>:w<CR>", { noremap = true, silent = true })
+vim.keymap.set("v", "<C-s>", "<Esc>:w<CR>gv", { noremap = true, silent = true })
