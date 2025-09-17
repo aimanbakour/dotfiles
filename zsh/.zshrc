@@ -135,8 +135,25 @@ autoload -U compinit
 _ZCACHEDIR="${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
 mkdir -p "$_ZCACHEDIR"
 _ZCOMPFILE="$_ZCACHEDIR/.zcompdump"
-if [[ -n ${_ZCOMPFILE}(#qN.mh+24) ]]; then
-  compinit -d "$_ZCOMPFILE"
+_ZFPATHFILE="$_ZCACHEDIR/.zcompdump.fpath"
+
+# Fast, robust compinit: rebuild when missing, fpath changed, or older than 24h; otherwise use cached table
+typeset -aU fpath  # ensure unique entries
+local _cur_fpath="${(j.:.)fpath}"
+local _rebuild=0
+if [[ ! -s "$_ZCOMPFILE" ]]; then
+  _rebuild=1
+elif [[ ! -s "$_ZFPATHFILE" ]] || [[ "$(<"$_ZFPATHFILE")" != "$_cur_fpath" ]]; then
+  _rebuild=1
+elif [[ -n ${_ZCOMPFILE}(#qN.mh+24) ]]; then
+  _rebuild=1
+fi
+if (( _rebuild )); then
+  compinit -i -d "$_ZCOMPFILE"
+  print -r -- "$_cur_fpath" >| "$_ZFPATHFILE"
+  # Optional: compile the dump for faster startup next time
+  { zmodload zsh/zutil 2>/dev/null; } >/dev/null 2>&1 || true
+  { command -v zcompile >/dev/null 2>&1 && rm -f "$_ZCOMPFILE.zwc" 2>/dev/null && zcompile "$_ZCOMPFILE"; } || true
 else
   compinit -C -d "$_ZCOMPFILE"
 fi

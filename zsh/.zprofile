@@ -12,8 +12,15 @@ addToPathFront() {
 }
 
 # Homebrew (macOS) – load shell env if brew is available
-if [[ "$OSTYPE" == darwin* ]] && command -v brew >/dev/null 2>&1; then
-  eval "$(brew shellenv)"
+if command -v brew >/dev/null 2>&1; then
+  if [[ "$OSTYPE" == darwin* ]]; then
+    eval "$(brew shellenv)"
+  fi
+  # Ensure Homebrew zsh completions are on fpath
+  hb_site_funcs="$(brew --prefix 2>/dev/null)/share/zsh/site-functions"
+  if [[ -d "$hb_site_funcs" ]]; then
+    fpath=($hb_site_funcs $fpath)
+  fi
 fi
 
 

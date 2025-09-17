@@ -57,6 +57,9 @@
     yazi_libc: musl   # musl | gnu
     # Neovim install settings (install official binary)
     install_neovim: true
+    # eza install settings (via Cargo)
+    install_eza: true
+    rust_profile: minimal
 
   tasks:
     - name: Ensure user exists (for container scenarios)
@@ -156,6 +159,58 @@
         cache_valid_time: 3600
       when: install_yazi
       tags: [yazi, packages]
+
+    # eza via Cargo (Rust)
+    - name: Install build deps for Rust/Cargo (for eza)
+      apt:
+        name:
+          - build-essential
+          - pkg-config
+          - cmake
+          - libssl-dev
+          - zlib1g-dev
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      when: install_eza
+      tags: [eza, packages]
+
+    - name: Install rustup for user if missing (for eza)
+      become_user: "{{ user }}"
+      shell: |
+        set -e
+        curl https://sh.rustup.rs -sSf | sh -s -- -y --profile {{ rust_profile }}
+      args:
+        creates: "{{ home }}/.cargo/bin/rustup"
+      when: install_eza
+      tags: [eza]
+
+    - name: Ensure cargo in PATH for this run (for eza)
+      set_fact:
+        cargo_bin: "{{ home }}/.cargo/bin"
+      when: install_eza
+      tags: [eza]
+
+    - name: Install eza via Cargo
+      become_user: "{{ user }}"
+      shell: |
+        set -e
+        export PATH="{{ cargo_bin }}:$PATH"
+        cargo install --locked eza
+      args:
+        executable: /bin/bash
+        creates: "{{ home }}/.cargo/bin/eza"
+      when: install_eza
+      tags: [eza]
+
+    - name: Link eza binary into /usr/local/bin
+      file:
+        src: "{{ home }}/.cargo/bin/eza"
+        dest: "/usr/local/bin/eza"
+        state: link
+        force: true
+      when: install_eza
+      tags: [eza]
 
     # Neovim (official binary)
     - name: Detect CPU arch for Neovim (dpkg)
