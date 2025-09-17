@@ -220,62 +220,56 @@
       when: install_neovim
       tags: [neovim]
 
-    - name: Map arch to Neovim asset suffix
+    - name: Map arch to Neovim AppImage arch
       set_fact:
-        nvim_asset_suffix: "{{ 'linux64' if nvim_arch_raw.stdout.strip() == 'amd64' else ('linux-arm64' if nvim_arch_raw.stdout.strip() in ['arm64','aarch64'] else '') }}"
+        nvim_arch: "{{ 'x86_64' if nvim_arch_raw.stdout.strip() == 'amd64' else ('arm64' if nvim_arch_raw.stdout.strip() in ['arm64','aarch64'] else '') }}"
       when: install_neovim
       tags: [neovim]
 
     - name: Fail if Neovim arch is unsupported
       fail:
-        msg: "Unsupported architecture for Neovim: {{ nvim_arch_raw.stdout.strip() }}"
-      when: install_neovim and nvim_asset_suffix == ''
+        msg: "Unsupported architecture for Neovim AppImage: {{ nvim_arch_raw.stdout.strip() }}"
+      when: install_neovim and nvim_arch == ''
       tags: [neovim]
 
-    - name: Find Neovim latest tarball URL
-      shell: |
-        set -e
-        api='https://api.github.com/repos/neovim/neovim/releases/latest'
-        pat='nvim-{{ nvim_asset_suffix }}\\.tar\\.gz$'
-        url=$(curl -fsSL "$api" | jq -r ".assets[] | select(.name | test(\"$pat\")) | .browser_download_url" | head -n1)
-        [ -n "$url" ] && echo "$url"
-      register: nvim_url
-      changed_when: false
-      failed_when: nvim_url.stdout == ''
+    - name: Build Neovim latest AppImage URL
+      set_fact:
+        nvim_appimage_url: "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-{{ nvim_arch }}.appimage"
       when: install_neovim
       tags: [neovim]
 
-    - name: Download Neovim tarball
+    - name: Download Neovim AppImage
       get_url:
-        url: "{{ nvim_url.stdout }}"
-        dest: "/tmp/nvim-{{ nvim_asset_suffix }}.tar.gz"
+        url: "{{ nvim_appimage_url }}"
+        dest: "/tmp/nvim-linux-{{ nvim_arch }}.appimage"
+        mode: "0755"
         force: true
       when: install_neovim
       tags: [neovim]
 
-    - name: Extract Neovim tarball
-      unarchive:
-        src: "/tmp/nvim-{{ nvim_asset_suffix }}.tar.gz"
-        dest: "/tmp"
-        remote_src: true
-        creates: "/tmp/nvim-{{ nvim_asset_suffix }}"
+    - name: Create Neovim AppImage install dir
+      file:
+        path: "/usr/local/nvim-appimage"
+        state: directory
+        mode: "0755"
       when: install_neovim
       tags: [neovim]
 
-    - name: Install Neovim to /usr/local/nvim (if not already present)
+    - name: Extract Neovim AppImage (no FUSE required)
       shell: |
         set -e
-        rm -rf /usr/local/nvim
-        mv "/tmp/nvim-{{ nvim_asset_suffix }}" /usr/local/nvim
+        cd /usr/local/nvim-appimage
+        rm -rf squashfs-root
+        "/tmp/nvim-linux-{{ nvim_arch }}.appimage" --appimage-extract
       args:
         executable: /bin/bash
-        creates: "/usr/local/nvim/bin/nvim"
+        creates: "/usr/local/nvim-appimage/squashfs-root/usr/bin/nvim"
       when: install_neovim
       tags: [neovim]
 
     - name: Ensure /usr/local/bin/nvim symlink
       file:
-        src: "/usr/local/nvim/bin/nvim"
+        src: "/usr/local/nvim-appimage/squashfs-root/usr/bin/nvim"
         dest: "/usr/local/bin/nvim"
         state: link
         force: true
