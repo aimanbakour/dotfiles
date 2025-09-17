@@ -15,6 +15,7 @@
       - neovim
       - git
       - sudo
+      - locales
       - ripgrep
       - fd-find
       - fzf
@@ -29,6 +30,11 @@
       - curl
       - stow
       - xclip
+
+    # Locale configuration
+    locale_lang: "en_US.UTF-8"
+    locale_generate:
+      - "en_US.UTF-8 UTF-8"
 
     # Where this repo is on the target machine
     dotfiles_dir: "{{ home }}/dotfiles"
@@ -64,6 +70,44 @@
         update_cache: true
         cache_valid_time: 3600
       tags: [packages]
+
+    # Locale setup (UTF-8)
+    - name: Ensure required locales are enabled in /etc/locale.gen
+      lineinfile:
+        path: /etc/locale.gen
+        regexp: "^#?\s*{{ item | regex_escape() }}$"
+        line: "{{ item }}"
+        state: present
+      loop: "{{ locale_generate }}"
+      register: locale_gen_edits
+      tags: [locale]
+
+    - name: Generate locales when config changed
+      command: locale-gen
+      when: locale_gen_edits is changed
+      tags: [locale]
+
+    - name: Persist LANG and LC_ALL in /etc/default/locale
+      lineinfile:
+        path: /etc/default/locale
+        create: true
+        regexp: "^{{ item.key }}="
+        line: "{{ item.key }}={{ item.val }}"
+      loop:
+        - { key: 'LANG',   val: '{{ locale_lang }}' }
+        - { key: 'LC_ALL', val: '{{ locale_lang }}' }
+      tags: [locale]
+
+    - name: Persist LANG and LC_ALL in /etc/environment
+      lineinfile:
+        path: /etc/environment
+        create: true
+        regexp: "^{{ item.key }}="
+        line: "{{ item.key }}={{ item.val }}"
+      loop:
+        - { key: 'LANG',   val: '{{ locale_lang }}' }
+        - { key: 'LC_ALL', val: '{{ locale_lang }}' }
+      tags: [locale]
 
     - name: Ensure user is in sudoers group
       user:
