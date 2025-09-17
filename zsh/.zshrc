@@ -62,15 +62,37 @@ alias k8000='lsof -ti:8000 | xargs kill -9'
 alias k3000='lsof -ti:3000 | xargs kill -9'
 
 
-# bun completions
-[ -s "/Users/aiman/.bun/_bun" ] && source "/Users/aiman/.bun/_bun"
+# bun completions (if installed in HOME)
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 
 
 # Defer non-critical plugin loading for better performance
+_try_source() {
+  local rel="$1"
+  local dirs=(
+    /opt/homebrew/share
+    /home/linuxbrew/.linuxbrew/share
+    /usr/local/share
+    /usr/share
+    "${XDG_DATA_HOME:-$HOME/.local/share}"
+    "$HOME/.zsh"
+  )
+  local d
+  for d in ${dirs[@]}; do
+    if [ -r "$d/$rel" ]; then
+      source "$d/$rel"
+      return 0
+    fi
+  done
+  return 1
+}
+
 _load_plugins_deferred() {
-  source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-  source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+  # zsh-syntax-highlighting
+  _try_source zsh-syntax-highlighting/zsh-syntax-highlighting.zsh || true
+  # zsh-autosuggestions
+  _try_source zsh-autosuggestions/zsh-autosuggestions.zsh || true
   # Remove the hook after first run
   add-zsh-hook -d precmd _load_plugins_deferred
 }
@@ -80,22 +102,56 @@ autoload -Uz add-zsh-hook
 add-zsh-hook precmd _load_plugins_deferred
 
 
-# Set up fzf key bindings and fuzzy completion
-source <(fzf --zsh)
+# Set up fzf key bindings and completion (compat with older Debian fzf)
+if _has_cmd fzf; then
+  if fzf --help 2>&1 | grep -q -- "--zsh"; then
+    source <(fzf --zsh)
+  else
+    for p in \
+      /usr/share/fzf/key-bindings.zsh \
+      /usr/share/fzf/shell/key-bindings.zsh \
+      /usr/share/doc/fzf/examples/key-bindings.zsh; do
+      [ -r "$p" ] && source "$p" && break
+    done
+    for p in \
+      /usr/share/fzf/completion.zsh \
+      /usr/share/fzf/shell/completion.zsh \
+      /usr/share/doc/fzf/examples/completion.zsh; do
+      [ -r "$p" ] && source "$p" && break
+    done
+  fi
+fi
 
 # export FZF_DEFAULT_OPTS="--height=40%"
 
 # Initialize zoxide (z command for smart directory jumping)
-eval "$(zoxide init zsh)"
+if _has_cmd zoxide; then
+  eval "$(zoxide init zsh)"
+fi
 
 # Optimized compinit - only rebuild if older than 24h
 autoload -U compinit
-if [[ -n ${XDG_CONFIG_HOME:-$HOME/.config}/zsh/.zcompdump(#qN.mh+24) ]]; then
-  compinit
+# Use XDG cache for compdump to avoid writing into the repo/config
+_ZCACHEDIR="${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+mkdir -p "$_ZCACHEDIR"
+_ZCOMPFILE="$_ZCACHEDIR/.zcompdump"
+if [[ -n ${_ZCOMPFILE}(#qN.mh+24) ]]; then
+  compinit -d "$_ZCOMPFILE"
 else
-  compinit -C
+  compinit -C -d "$_ZCOMPFILE"
 fi
-source /opt/homebrew/share/fzf-tab/fzf-tab.plugin.zsh
+# fzf-tab plugin if present (checks common system and user paths)
+if [ -r /opt/homebrew/share/fzf-tab/fzf-tab.plugin.zsh ]; then
+  source /opt/homebrew/share/fzf-tab/fzf-tab.plugin.zsh
+elif [ -r /home/linuxbrew/.linuxbrew/share/fzf-tab/fzf-tab.plugin.zsh ]; then
+  source /home/linuxbrew/.linuxbrew/share/fzf-tab/fzf-tab.plugin.zsh
+elif [ -r /usr/local/share/fzf-tab/fzf-tab.plugin.zsh ]; then
+  source /usr/local/share/fzf-tab/fzf-tab.plugin.zsh
+elif [ -r /usr/share/fzf-tab/fzf-tab.plugin.zsh ]; then
+  source /usr/share/fzf-tab/fzf-tab.plugin.zsh
+elif [ -r "${XDG_DATA_HOME:-$HOME/.local/share}/zsh/fzf-tab/fzf-tab.plugin.zsh" ]; then
+  source "${XDG_DATA_HOME:-$HOME/.local/share}/zsh/fzf-tab/fzf-tab.plugin.zsh"
+fi
 
 # Better directory listings with eza (modern replacement for ls)
 if _has_cmd eza; then
@@ -109,10 +165,9 @@ fi
 
 # Check that the function `starship_zle-keymap-select()` is defined.
 # xref: https://github.com/starship/starship/issues/3418
-type starship_zle-keymap-select >/dev/null || \
-  {
-    eval "$(starship init zsh)"
-  }
+if _has_cmd starship; then
+  type starship_zle-keymap-select >/dev/null 2>&1 || eval "$(starship init zsh)"
+fi
 
 
 export EDITOR='nvim'
@@ -190,8 +245,6 @@ function netspeed() {
     curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python -
 }
 
-# Tailscale
-alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 
 alias tmuxm='tmux new-session -A -s main'
 alias vim='nvim'
@@ -205,3 +258,8 @@ function y() {
 	[ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
 	rm -f -- "$tmp"
 }
+
+# Debian/Ubuntu provide fdfind instead of fd
+if ! _has_cmd fd && _has_cmd fdfind; then
+  alias fd=fdfind
+fi

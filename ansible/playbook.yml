@@ -1,0 +1,315 @@
+---
+- hosts: all
+  gather_facts: true
+  become: true
+  vars:
+    user: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
+    # Simpler Jinja (no ternary filter) to avoid old Jinja/Ansible issues
+    home: "{{ '/root' if user == 'root' else ('/home/' + user) }}"
+    # Adjust for macOS or other OSes if needed
+    # home: "{{ ansible_env.HOME | default(home) }}"
+
+    apt_packages:
+      - zsh
+      - tmux
+      - neovim
+      - git
+      - sudo
+      - ripgrep
+      - fd-find
+      - fzf
+      - zoxide
+      - zsh-syntax-highlighting
+      - zsh-autosuggestions
+      - jq
+      - htop
+      - p7zip-full
+      - imagemagick
+      - poppler-utils
+      - curl
+      - stow
+      - xclip
+
+    # Where this repo is on the target machine
+    dotfiles_dir: "{{ home }}/dotfiles"
+
+    # Sudo configuration
+    sudo_group: sudo            # Debian/Ubuntu default; adjust for other distros
+    sudo_nopasswd: true         # Always configure passwordless sudo by default
+
+    # Packages to stow with their targets
+    stow_map:
+      - { name: "zsh",      target: "{{ home }}/.config/zsh" }
+      - { name: "nvim",     target: "{{ home }}/.config/nvim" }
+      - { name: "tmux",     target: "{{ home }}/.config/tmux" }
+      - { name: "starship", target: "{{ home }}/.config" }
+      - { name: "yazi",     target: "{{ home }}/.config/yazi" }
+      - { name: "zathura",  target: "{{ home }}/.config/zathura" }
+
+    # Yazi install settings (Debian/Ubuntu: install official binary)
+    install_yazi: true
+
+  tasks:
+    - name: Ensure user exists (for container scenarios)
+      user:
+        name: "{{ user }}"
+        shell: /usr/bin/zsh
+        create_home: true
+      tags: [user]
+
+    - name: Install base packages (Debian/Ubuntu)
+      apt:
+        name: "{{ apt_packages }}"
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      tags: [packages]
+
+    - name: Ensure user is in sudoers group
+      user:
+        name: "{{ user }}"
+        groups: "{{ sudo_group }}"
+        append: true
+      tags: [sudo]
+
+    - name: Configure passwordless sudo for the user (optional)
+      copy:
+        dest: "/etc/sudoers.d/99-{{ user }}"
+        content: "{{ user }} ALL=(ALL:ALL) NOPASSWD:ALL\n"
+        owner: root
+        group: root
+        mode: "0440"
+        validate: "visudo -cf %s"
+      when: sudo_nopasswd | bool
+      tags: [sudo]
+
+    - name: Symlink fd to fdfind for convenience
+      file:
+        src: /usr/bin/fdfind
+        dest: /usr/local/bin/fd
+        state: link
+      when: ansible_facts['os_family'] == 'Debian'
+      ignore_errors: true
+      tags: [packages]
+
+    - name: Ensure tools for Yazi binary install
+      apt:
+        name:
+          - curl
+          - jq
+          - xz-utils
+          - unzip
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      when: install_yazi
+      tags: [yazi, packages]
+
+    - name: Detect CPU arch (dpkg)
+      command: dpkg --print-architecture
+      register: arch_raw
+      changed_when: false
+      when: install_yazi
+      tags: [yazi]
+
+    - name: Map arch to yazi arch
+      set_fact:
+        yazi_arch: "{{ 'x86_64' if arch_raw.stdout.strip() == 'amd64' else ('aarch64' if arch_raw.stdout.strip() in ['arm64','aarch64'] else arch_raw.stdout.strip()) }}"
+      when: install_yazi
+      tags: [yazi]
+
+    - name: Detect libc (musl vs gnu)
+      shell: |
+        set -e
+        (ldd --version 2>&1 | grep -qi musl && echo musl) || echo gnu
+      register: libc_raw
+      changed_when: false
+      when: install_yazi
+      tags: [yazi]
+
+    - name: Build Yazi asset pattern and URL
+      shell: |
+        set -e
+        arch='{{ yazi_arch }}'
+        libc='{{ libc_raw.stdout.strip() }}'
+        api='https://api.github.com/repos/sxyazi/yazi/releases/latest'
+        # Find first matching asset for arch + unknown-linux-<libc>
+        url=$(curl -fsSL "$api" | jq -r ".assets[] | select((.name | test(\"$arch-unknown-linux-$libc\"))) | .browser_download_url" | head -n1)
+        if [ -z "$url" ]; then
+          echo ""; exit 1
+        fi
+        echo "$url"
+      register: yazi_url
+      changed_when: false
+      failed_when: yazi_url.stdout == ""
+      when: install_yazi
+      tags: [yazi]
+
+    - name: Determine Yazi archive extension
+      set_fact:
+        yazi_ext: "{{ (yazi_url.stdout | regex_search('\\.(tar\\.xz|tar\\.gz|zip)$')) or '.tar.gz' }}"
+      when: install_yazi
+      tags: [yazi]
+
+    - name: Download Yazi archive
+      get_url:
+        url: "{{ yazi_url.stdout }}"
+        dest: "/tmp/yazi-{{ yazi_arch }}{{ yazi_ext }}"
+        force: true
+      when: install_yazi
+      tags: [yazi]
+
+    - name: Create temporary extract dir
+      file:
+        path: "/tmp/yazi-extract"
+        state: directory
+        mode: "0755"
+      when: install_yazi
+      tags: [yazi]
+
+    - name: Extract Yazi archive
+      shell: |
+        set -e
+        file="/tmp/yazi-{{ yazi_arch }}{{ yazi_ext }}"
+        case "$file" in
+          *.tar.xz) tar -xJf "$file" -C /tmp/yazi-extract ;;
+          *.tar.gz) tar -xzf "$file" -C /tmp/yazi-extract ;;
+          *.zip)    unzip -o "$file" -d /tmp/yazi-extract ;;
+          *)        tar -xf "$file" -C /tmp/yazi-extract ;;
+        esac
+      args:
+        executable: /bin/bash
+      when: install_yazi
+      tags: [yazi]
+
+    - name: Install Yazi binaries to /usr/local/bin
+      shell: |
+        set -e
+        shopt -s globstar nullglob
+        dest="/usr/local/bin"
+        mkdir -p "$dest"
+        # Install main binary 'yazi' and possible helpers 'ya*'
+        installed=0
+        for f in /tmp/yazi-extract/**/yazi /tmp/yazi-extract/**/ya /tmp/yazi-extract/**/yazi-*; do
+          if [ -f "$f" ] && [ -x "$f" ]; then
+            cp -f "$f" "$dest/$(basename "$f")"
+            chmod 0755 "$dest/$(basename "$f")"
+            installed=1
+          fi
+        done
+        if [ "$installed" -eq 0 ]; then
+          echo "No yazi binaries found in extracted archive" >&2
+          exit 1
+        fi
+      args:
+        executable: /bin/bash
+      when: install_yazi
+      tags: [yazi]
+
+    - name: Cleanup temp Yazi files
+      file:
+        path: "/tmp/yazi-extract"
+        state: absent
+      when: install_yazi
+      tags: [yazi]
+
+    - name: Ensure key config/cache directories exist
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        mode: "0755"
+      loop:
+        - "{{ home }}/.config"
+        - "{{ home }}/.cache/zsh"
+        - "{{ home }}/.local/share/zsh"
+      tags: [directories, zsh]
+
+    - name: Copy wrapper .zshrc into $HOME
+      copy:
+        dest: "{{ home }}/.zshrc"
+        content: |
+          export ZDOTDIR="$HOME/.config/zsh"
+          [ -f "$ZDOTDIR/.zshrc" ] && source "$ZDOTDIR/.zshrc"
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        mode: "0644"
+      tags: [zsh]
+
+    - name: Copy wrapper .zprofile into $HOME
+      copy:
+        dest: "{{ home }}/.zprofile"
+        content: |
+          export ZDOTDIR="$HOME/.config/zsh"
+          [ -f "$ZDOTDIR/.zprofile" ] && source "$ZDOTDIR/.zprofile"
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        mode: "0644"
+      tags: [zsh]
+
+    - name: Ensure dotfiles repo exists at {{ dotfiles_dir }}
+      git:
+        repo: "https://github.com/aimanbakour/dotfiles"
+        dest: "{{ dotfiles_dir }}"
+        update: yes
+        version: main
+      become_user: "{{ user }}"
+      tags: [dotfiles]
+
+    - name: Ensure stow targets exist
+      file:
+        path: "{{ item.target }}"
+        state: directory
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        mode: "0755"
+      loop: "{{ stow_map }}"
+      tags: [stow]
+
+    - name: Install fzf-tab plugin (clone)
+      git:
+        repo: "https://github.com/Aloxaf/fzf-tab.git"
+        dest: "{{ home }}/.local/share/zsh/fzf-tab"
+        update: yes
+        version: master
+      become_user: "{{ user }}"
+      tags: [plugins, zsh]
+
+    - name: Stow dotfiles packages
+      command: >-
+        stow --restow --target="{{ item.target }}" {{ item.name }}
+      args:
+        chdir: "{{ dotfiles_dir }}"
+      become_user: "{{ user }}"
+      loop: "{{ stow_map }}"
+      tags: [stow]
+
+    - name: Ensure legacy tmux config symlink (~/.tmux.conf)
+      file:
+        src: "{{ home }}/.config/tmux/tmux.conf"
+        dest: "{{ home }}/.tmux.conf"
+        state: link
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        force: true
+      tags: [tmux]
+
+    - name: Set login shell to zsh (if not already)
+      user:
+        name: "{{ user }}"
+        shell: /usr/bin/zsh
+      tags: [zsh]
+
+    - name: Final message
+      debug:
+        msg: |
+          Dotfiles stowed. Open a new shell or run: exec zsh -l
+      tags: [info]
+    - name: Install Starship (official script) if missing
+      shell: |
+        set -e
+        curl -fsSL https://starship.rs/install.sh | sh -s -- -y -b /usr/local/bin
+      args:
+        creates: /usr/local/bin/starship
+      tags: [packages, starship]

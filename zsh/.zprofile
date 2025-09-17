@@ -11,7 +11,10 @@ addToPathFront() {
     fi
 }
 
-eval "$(/opt/homebrew/bin/brew shellenv)"
+# Homebrew (macOS) – load shell env if brew is available
+if [[ "$OSTYPE" == darwin* ]] && command -v brew >/dev/null 2>&1; then
+  eval "$(brew shellenv)"
+fi
 
 
 # XDG directories
@@ -24,26 +27,31 @@ export XDG_STATE_HOME="$HOME/.local/state"
 # Env
 export BUN_INSTALL="$HOME/.bun"
 
-# Paths
-addToPathFront "$HOME/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin"
-addToPathFront "/opt/homebrew/bin"
+# Paths (universal + OS-specific)
+# Universal user bins
+addToPathFront "$HOME/.local/bin"
+addToPath      "$HOME/.local/scripts"
+addToPath      "$HOME/.cargo/bin"
 addToPathFront "$BUN_INSTALL/bin"
 addToPathFront "$HOME/.volta/bin"
-addToPathFront "/Applications/OrbStack.app/Contents/MacOS/bin"
-addToPathFront "$HOME/.local/bin"
 
-addToPath "$HOME/.cargo/bin"
-addToPath "$HOME/.local/scripts"
-
-# Google Cloud SDK
-if [ -f '/Users/aiman/google-cloud-sdk/path.zsh.inc' ]; then
-    . '/Users/aiman/google-cloud-sdk/path.zsh.inc'
+# macOS specific tools
+if [[ "$OSTYPE" == darwin* ]]; then
+  addToPathFront "/opt/homebrew/bin"
+  addToPathFront "/Applications/OrbStack.app/Contents/MacOS/bin"
+  # Example: uv’s macOS-specific venv path (safe if missing)
+  addToPathFront "$HOME/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin"
 fi
 
-if [ -f '/Users/aiman/google-cloud-sdk/completion.zsh.inc' ]; then
-    . '/Users/aiman/google-cloud-sdk/completion.zsh.inc'
+# Google Cloud SDK (if installed in HOME)
+if [ -f "$HOME/google-cloud-sdk/path.zsh.inc" ]; then
+  . "$HOME/google-cloud-sdk/path.zsh.inc"
+fi
+if [ -f "$HOME/google-cloud-sdk/completion.zsh.inc" ]; then
+  . "$HOME/google-cloud-sdk/completion.zsh.inc"
 fi
 
-# Added by OrbStack: command-line tools and integration
-# This won't be added again if you remove it.
-source ~/.orbstack/shell/init.zsh 2>/dev/null || :
+# OrbStack integration (macOS)
+if [[ "$OSTYPE" == darwin* ]]; then
+  source "$HOME/.orbstack/shell/init.zsh" 2>/dev/null || :
+fi
