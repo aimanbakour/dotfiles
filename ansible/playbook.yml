@@ -53,6 +53,8 @@
 
     # Yazi install settings (Debian/Ubuntu: install official binary)
     install_yazi: true
+    # Prefer musl build to avoid GLIBC version mismatches on older distros
+    yazi_libc: musl   # musl | gnu
     # Neovim install settings (install official binary)
     install_neovim: true
 
@@ -73,19 +75,24 @@
       tags: [packages]
 
     # Locale setup (UTF-8)
-    - name: Ensure required locales are enabled in /etc/locale.gen
-      lineinfile:
+    - name: Uncomment en_US.UTF-8 in /etc/locale.gen if present
+      replace:
         path: /etc/locale.gen
-        regexp: "^#?\s*{{ item | regex_escape() }}$"
-        line: "{{ item }}"
-        state: present
-      loop: "{{ locale_generate }}"
-      register: locale_gen_edits
+        regexp: '^[#[:space:]]*en_US\.UTF-8 UTF-8$'
+        replace: 'en_US.UTF-8 UTF-8'
       tags: [locale]
 
-    - name: Generate locales when config changed
+    - name: Ensure en_US.UTF-8 line present in /etc/locale.gen
+      lineinfile:
+        path: /etc/locale.gen
+        line: 'en_US.UTF-8 UTF-8'
+        state: present
+        create: true
+      tags: [locale]
+
+    - name: Generate locales
       command: locale-gen
-      when: locale_gen_edits is changed
+      changed_when: false
       tags: [locale]
 
     - name: Persist LANG and LC_ALL in /etc/default/locale
@@ -233,20 +240,11 @@
       when: install_yazi
       tags: [yazi]
 
-    - name: Detect libc (musl vs gnu)
-      shell: |
-        set -e
-        (ldd --version 2>&1 | grep -qi musl && echo musl) || echo gnu
-      register: libc_raw
-      changed_when: false
-      when: install_yazi
-      tags: [yazi]
-
     - name: Build Yazi asset pattern and URL
       shell: |
         set -e
         arch='{{ yazi_arch }}'
-        libc='{{ libc_raw.stdout.strip() }}'
+        libc='{{ yazi_libc }}'
         api='https://api.github.com/repos/sxyazi/yazi/releases/latest'
         # Find first matching asset for arch + unknown-linux-<libc>
         url=$(curl -fsSL "$api" | jq -r ".assets[] | select((.name | test(\"$arch-unknown-linux-$libc\"))) | .browser_download_url" | head -n1)
