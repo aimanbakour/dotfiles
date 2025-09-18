@@ -8,7 +8,6 @@ vim.keymap.set("n", "<leader>w", "<cmd>w<cr>", { desc = "Save File" })
 -- Make file executable
 vim.keymap.set("n", "<leader>cx", "<cmd>!chmod +x %<CR>", { silent = true })
 
--- Visual line movement (from Prime)
 vim.keymap.set(
 	"v",
 	"J",
@@ -22,7 +21,6 @@ vim.keymap.set(
 	{ desc = "Move selected lines up" }
 )
 
--- Better navigation (from Prime)
 vim.keymap.set(
 	"n",
 	"J",
