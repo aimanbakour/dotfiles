@@ -39,22 +39,22 @@
     dotfiles_dir: "{{ home }}/dotfiles"
 
     # Sudo configuration
-    sudo_group: sudo            # Debian/Ubuntu default; adjust for other distros
-    sudo_nopasswd: true         # Always configure passwordless sudo by default
+    sudo_group: sudo # Debian/Ubuntu default; adjust for other distros
+    sudo_nopasswd: true # Always configure passwordless sudo by default
 
     # Packages to stow with their targets
     stow_map:
-      - { name: "zsh",      target: "{{ home }}/.config/zsh" }
-      - { name: "nvim",     target: "{{ home }}/.config/nvim" }
-      - { name: "tmux",     target: "{{ home }}/.config/tmux" }
+      - { name: "zsh", target: "{{ home }}/.config/zsh" }
+      - { name: "nvim", target: "{{ home }}/.config/nvim" }
+      - { name: "tmux", target: "{{ home }}/.config/tmux" }
       - { name: "starship", target: "{{ home }}/.config" }
-      - { name: "yazi",     target: "{{ home }}/.config/yazi" }
-      - { name: "zathura",  target: "{{ home }}/.config/zathura" }
+      - { name: "yazi", target: "{{ home }}/.config/yazi" }
+      - { name: "scripts", target: "{{ home }}/.local/scripts" }
 
     # Yazi install settings (Debian/Ubuntu: install official binary)
     install_yazi: true
     # Prefer musl build to avoid GLIBC version mismatches on older distros
-    yazi_libc: musl   # musl | gnu
+    yazi_libc: musl # musl | gnu
     # Neovim install settings (install official binary)
     install_neovim: true
     # eza install settings (via Cargo)
@@ -82,13 +82,13 @@
       replace:
         path: /etc/locale.gen
         regexp: '^[#[:space:]]*en_US\.UTF-8 UTF-8$'
-        replace: 'en_US.UTF-8 UTF-8'
+        replace: "en_US.UTF-8 UTF-8"
       tags: [locale]
 
     - name: Ensure en_US.UTF-8 line present in /etc/locale.gen
       lineinfile:
         path: /etc/locale.gen
-        line: 'en_US.UTF-8 UTF-8'
+        line: "en_US.UTF-8 UTF-8"
         state: present
         create: true
       tags: [locale]
@@ -105,8 +105,8 @@
         regexp: "^{{ item.key }}="
         line: "{{ item.key }}={{ item.val }}"
       loop:
-        - { key: 'LANG',   val: '{{ locale_lang }}' }
-        - { key: 'LC_ALL', val: '{{ locale_lang }}' }
+        - { key: "LANG", val: "{{ locale_lang }}" }
+        - { key: "LC_ALL", val: "{{ locale_lang }}" }
       tags: [locale]
 
     - name: Persist LANG and LC_ALL in /etc/environment
@@ -116,8 +116,8 @@
         regexp: "^{{ item.key }}="
         line: "{{ item.key }}={{ item.val }}"
       loop:
-        - { key: 'LANG',   val: '{{ locale_lang }}' }
-        - { key: 'LC_ALL', val: '{{ locale_lang }}' }
+        - { key: "LANG", val: "{{ locale_lang }}" }
+        - { key: "LC_ALL", val: "{{ locale_lang }}" }
       tags: [locale]
 
     - name: Ensure user is in sudoers group
