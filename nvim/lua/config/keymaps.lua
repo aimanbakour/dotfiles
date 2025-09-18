@@ -42,7 +42,11 @@ vim.keymap.set({ "n", "v" }, "<leader>D", [["_d]])
 --   { desc = "Search and replace word under cursor" }
 -- )
 
-vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww tmux-sessionizer<CR>")
+vim.keymap.set(
+	"n",
+	"<C-f>",
+	[[<cmd>silent !tmux display-popup -w 80\% -h 80\% -E tmux-sessionizer<CR>]]
+)
 
 -- Disable accidental marks
 vim.keymap.set("n", "m", "<Nop>")
