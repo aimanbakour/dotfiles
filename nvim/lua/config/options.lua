@@ -14,9 +14,9 @@ vim.g.lazyvim_lua_ls = false
 
 -- Show only diagnostic signs, not inline text (better for ADHD/focus)
 vim.diagnostic.config({
-  virtual_text = false, -- Disable inline diagnostic text
-  signs = true, -- Show signs in gutter
-  underline = true, -- Keep underlines
+	virtual_text = false, -- Disable inline diagnostic text
+	signs = true, -- Show signs in gutter
+	underline = true, -- Keep underlines
 })
 
 -- Settings from Prime
@@ -55,29 +55,20 @@ vim.opt.statusline = "%F %h%w%m%r %=                    %(%l,%c%V         %P%)"
 
 -- Fix bash script detection for shebang
 vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
-  pattern = "*",
-  callback = function()
-    local first_line = vim.fn.getline(1)
-    if first_line:match("^#!/usr/bin/env bash") then
-      vim.bo.filetype = "bash"
-    end
-  end,
+	pattern = "*",
+	callback = function()
+		local first_line = vim.fn.getline(1)
+		if first_line:match("^#!/usr/bin/env bash") then
+			vim.bo.filetype = "bash"
+		end
+	end,
 })
 
 -- Toggle diagnostics command
 vim.api.nvim_create_user_command("DiagnosticsToggle", function()
-  vim.diagnostic.enable(not vim.diagnostic.is_enabled())
+	vim.diagnostic.enable(not vim.diagnostic.is_enabled())
 end, {})
 
--- Completion toggle with blink.cmp
--- vim.b.completion = false
---
--- Snacks.toggle({
---   name = "Completion",
---   get = function()
---     return vim.b.completion
---   end,
---   set = function(state)
---     vim.b.completion = state
---   end,
--- }):map("<leader>tc")
+-- For Molten venv
+vim.g.python3_host_prog =
+	vim.fn.expand("~/.local/virtualenvs/neovim/bin/python")

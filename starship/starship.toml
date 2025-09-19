@@ -1,5 +1,5 @@
 # Custom minimal format - character first, then directory and git branch
-format = "$character$directory$git_branch "
+format = "$character$directory$git_branch$python "
 add_newline = false
 
 [line_break]
@@ -9,7 +9,7 @@ disabled = true
 disabled = false
 success_symbol = '[](blue)'
 error_symbol = '[](red)'
-vimcmd_symbol ='[V](blue)'
+# vimcmd_symbol = '[V](blue)'
 
 [package]
 disabled = true
@@ -25,7 +25,14 @@ symbol = ""
 format = '\([$symbol $branch]($style)\)'
 
 [git_status]
-disabled = true
+disabled = false
 format = '([\[$all_status$ahead_behind\]]($style))'
 
-
+[python]
+# show just the env name, not the version/symbol
+format = '\[[$symbol$virtualenv]($style)\]'
+style = "yellow"
+symbol = " "
+detect_extensions = []
+detect_files = []
+detect_folders = []
