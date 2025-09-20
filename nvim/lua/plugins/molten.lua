@@ -33,7 +33,7 @@ return {
 		{
 			"<leader>mr",
 			mode = { "v" },
-			"<C-u><cmd>MoltenEvaluateVisual<CR>gv",
+			":<C-u>MoltenEvaluateVisual<CR>gv",
 			desc = "Execute visual selection",
 			silent = true,
 		},

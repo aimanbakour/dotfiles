@@ -13,6 +13,19 @@ return {
 						},
 					},
 				},
+				-- Jupyter notebooks, unused expression at the bottom of a cell
+				-- as a way of printing the value
+				pyright = {
+					settings = {
+						python = {
+							analysis = {
+								diagnosticSeverityOverrides = {
+									reportUnusedExpression = "none",
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	},

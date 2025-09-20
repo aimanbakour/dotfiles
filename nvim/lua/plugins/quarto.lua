@@ -1,3 +1,4 @@
+-- Credits:
 -- https://github.com/benlubas/molten-nvim/blob/main/docs/Notebook-Setup.md
 return {
 	{
