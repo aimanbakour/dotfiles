@@ -10,7 +10,7 @@ vim.opt.textwidth = 80 -- Highlight long lines
 vim.opt.colorcolumn = "80" -- Show 80-char guide line
 
 -- Disable lua language server to prevent warning
-vim.g.lazyvim_lua_ls = false
+-- vim.g.lazyvim_lua_ls = false
 
 -- Show only diagnostic signs, not inline text (better for ADHD/focus)
 vim.diagnostic.config({
@@ -71,4 +71,4 @@ end, {})
 
 -- For Molten venv
 vim.g.python3_host_prog =
-	vim.fn.expand("~/.local/virtualenvs/neovim/bin/python")
+	vim.fn.expand("~/.local/virtualenvs/.neovim/bin/python")

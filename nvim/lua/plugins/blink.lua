@@ -29,9 +29,9 @@ return {
 			},
 		}
 		opts.sources = {
-			per_filetype = {
-				markdown = {},
-			},
+			-- 	per_filetype = {
+			-- 		markdown = {},
+			-- 	},
 			transform_items = function(_, items)
 				-- filter out LSP "Text" suggestions
 				return vim.tbl_filter(function(item)
