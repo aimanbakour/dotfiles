@@ -475,3 +475,12 @@
       args:
         creates: /usr/local/bin/starship
       tags: [packages, starship]
+    - name: Install uv (official script) if missing
+      become_user: "{{ user }}"
+      shell: |
+        set -e
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+      args:
+        executable: /bin/bash
+        creates: "{{ home }}/.local/bin/uv"
+      tags: [packages, uv]
