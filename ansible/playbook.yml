@@ -20,6 +20,9 @@
       - zoxide
       - zsh-syntax-highlighting
       - zsh-autosuggestions
+      - build-essential
+      - procps
+      - file
       - jq
       - htop
       - p7zip-full
@@ -483,77 +486,27 @@
         executable: /bin/bash
         creates: "{{ home }}/.local/bin/uv"
       tags: [packages, uv]
-    - name: Check if fzf is already installed in /usr/local/bin
-      stat:
-        path: /usr/local/bin/fzf
-      register: fzf_bin
-      tags: [packages, fzf]
-
-    - name: Detect CPU arch for fzf (dpkg)
-      command: dpkg --print-architecture
-      register: fzf_arch_raw
-      changed_when: false
-      when: not fzf_bin.stat.exists
-      tags: [packages, fzf]
-
-    - name: Map arch to fzf platform
-      set_fact:
-        fzf_platform: "{{ 'linux_amd64' if fzf_arch_raw.stdout.strip() == 'amd64' else ('linux_arm64' if fzf_arch_raw.stdout.strip() in ['arm64','aarch64'] else '') }}"
-      when: not fzf_bin.stat.exists
-      tags: [packages, fzf]
-
-    - name: Fail if fzf platform is unsupported
-      fail:
-        msg: "Unsupported architecture for fzf: {{ fzf_arch_raw.stdout.strip() }}"
-      when: not fzf_bin.stat.exists and fzf_platform == ''
-      tags: [packages, fzf]
-
-    - name: Resolve latest fzf URL for platform
+    - name: Install Homebrew on Linux (if missing)
+      become_user: "{{ user }}"
       shell: |
         set -e
-        api='https://api.github.com/repos/junegunn/fzf/releases/latest'
-        url=$(curl -fsSL "$api" | jq -r ".assets[] | select((.name | test(\"^fzf-.*-{{ fzf_platform }}\\.tar\\.gz$\"))) | .browser_download_url" | head -n1)
-        if [ -z "$url" ]; then
-          echo ""; exit 1
-        fi
-        echo "$url"
-      register: fzf_url
-      changed_when: false
-      failed_when: fzf_url.stdout == ""
-      when: not fzf_bin.stat.exists
-      tags: [packages, fzf]
+        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      args:
+        executable: /bin/bash
+        creates: "/home/linuxbrew/.linuxbrew/bin/brew"
+      when: ansible_system == 'Linux'
+      tags: [packages, brew]
 
-    - name: Download fzf archive
-      get_url:
-        url: "{{ fzf_url.stdout }}"
-        dest: "/tmp/fzf-{{ fzf_platform }}.tar.gz"
-        force: true
-      when: not fzf_bin.stat.exists
-      tags: [packages, fzf]
-
-    - name: Extract fzf archive
-      unarchive:
-        src: "/tmp/fzf-{{ fzf_platform }}.tar.gz"
-        dest: "/tmp/fzf-extract"
-        remote_src: true
-        mode: "0755"
-      when: not fzf_bin.stat.exists
-      tags: [packages, fzf]
-
-    - name: Install fzf binary to /usr/local/bin
-      copy:
-        src: "/tmp/fzf-extract/fzf"
-        dest: "/usr/local/bin/fzf"
-        mode: "0755"
-      when: not fzf_bin.stat.exists
-      tags: [packages, fzf]
-
-    - name: Cleanup fzf temp extract dir
-      file:
-        path: "/tmp/fzf-extract"
-        state: absent
-      when: not fzf_bin.stat.exists
-      tags: [packages, fzf]
+    - name: Install fzf via Homebrew (Linux)
+      become_user: "{{ user }}"
+      shell: |
+        set -e
+        /home/linuxbrew/.linuxbrew/bin/brew install fzf
+      args:
+        executable: /bin/bash
+        creates: "/home/linuxbrew/.linuxbrew/bin/fzf"
+      when: ansible_system == 'Linux'
+      tags: [packages, brew, fzf]
     - name: Ensure molten venv root exists
       file:
         path: "{{ molten_venv_dir }}"
