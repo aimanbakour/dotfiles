@@ -17,6 +17,9 @@ return {
 
 		opts.keymap = {
 			preset = "default",
+			--  On macOs C-Space is not available
+			--  System Preferences > Keyboard > Keyboard Shortcuts >
+			--  Input Sources > (remove Ctrl+Space and Ctrl+Shift+Space).
 			["<C-space>"] = {
 				function(cmp)
 					cmp.show({ providers = { "lsp", "path", "buffer" } })

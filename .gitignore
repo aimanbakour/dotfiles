@@ -1,3 +1,5 @@
 zsh/.zcompdump
 zsh/.zcompcache
 nvim/lazy-lock.json
+.DS_Store
+zsh/.zsh_sessions

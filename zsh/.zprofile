@@ -52,6 +52,10 @@ if [[ "$OSTYPE" == darwin* ]]; then
   addToPathFront "$HOME/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin"
 fi
 
+# Config to make zathura work with VimTex
+export DBUS_SESSION_BUS_ADDRESS="unix:path=$DBUS_LAUNCHD_SESSION_BUS_SOCKET"
+
+
 # Google Cloud SDK (if installed in HOME)
 if [ -f "$HOME/google-cloud-sdk/path.zsh.inc" ]; then
   . "$HOME/google-cloud-sdk/path.zsh.inc"

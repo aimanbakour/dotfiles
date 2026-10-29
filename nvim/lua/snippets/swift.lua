@@ -1,5 +1,5 @@
 local ls = require("luasnip")
-local s, t, i, f = ls.snippet, ls.text_node, ls.insert_node, ls.function_node
+local s, t, i, f, c = ls.snippet, ls.text_node, ls.insert_node, ls.function_node, ls.choice_node
 local fmt = require("luasnip.extras.fmt").fmt
 local rep = require("luasnip.extras").rep
 
@@ -32,8 +32,8 @@ local stack = s("stk", fmt([[
 }}
 ]], {
     c(1, {t("VStack"), t("ZStack"), t("HStack")}),
-    i(0),
-    i(2, { 'Text("Hello")', "    .padding()" })
+    i(2),
+    i(0, { 'Text("Hello")', "    .padding()" })
 }))
 
 local state = s("state", fmt([[
