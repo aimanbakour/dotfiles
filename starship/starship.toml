@@ -1,5 +1,3 @@
-# Custom minimal format - character first, then directory and git branch
-format = "$character$directory$git_branch$python "
 add_newline = false
 
 [line_break]
@@ -8,16 +6,11 @@ disabled = true
 [character]
 disabled = false
 success_symbol = '[](blue)'
-error_symbol = '[](red)'
-# vimcmd_symbol = '[V](blue)'
-
-[package]
-disabled = true
-format = '\[[$symbol$version]($style)\]'
-
+# error_symbol = '[](red)'
 [directory]
-disabled = false
-truncation_length = 0
+truncation_length = 3    # last 3 folders
+truncate_to_repo = true  # start paths at the git repo root
+truncation_symbol = "…/"
 
 # Git 
 [git_branch]
@@ -25,7 +18,6 @@ symbol = ""
 format = '\([$symbol $branch]($style)\)'
 
 [git_status]
-disabled = false
 format = '([\[$all_status$ahead_behind\]]($style))'
 
 [python]
@@ -36,3 +28,15 @@ symbol = " "
 detect_extensions = []
 detect_files = []
 detect_folders = []
+
+# Suspended/background jobs
+[jobs]
+symbol = "✦"
+format = ' [$symbol$number]($style)'
+number_threshold = 2
+
+[gcloud]
+disabled = true
+
+[cmd_duration]
+disabled = true
