@@ -124,6 +124,11 @@ fi
 
 # export FZF_DEFAULT_OPTS="--height=40%"
 
+# Atuin shell history (after fzf so it owns Ctrl-R; keep Up arrow as plain zsh history)
+if _has_cmd atuin; then
+  eval "$(atuin init zsh --disable-up-arrow)"
+fi
+
 # Initialize zoxide (z command for smart directory jumping)
 if _has_cmd zoxide; then
   eval "$(zoxide init zsh)"
