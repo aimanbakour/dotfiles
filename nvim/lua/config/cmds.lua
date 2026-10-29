@@ -12,7 +12,7 @@ vim.api.nvim_create_user_command("Restart", function()
 	local t0 = uv.hrtime()
 
 	-- 1) Unload ONLY your own modules so requiring them re-runs
-	local prefixes = { "^config", "^pluging", "^snippets" }
+	local prefixes = { "^config", "^plugins", "^snippets" }
 	for k in pairs(package.loaded) do
 		for _, p in ipairs(prefixes) do
 			if k:match(p) then
