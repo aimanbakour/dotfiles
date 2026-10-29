@@ -286,3 +286,6 @@ function y() {
 if ! _has_cmd fd && _has_cmd fdfind; then
   alias fd=fdfind
 fi
+
+# Added by the Hunk installer (https://hunk.dev)
+export PATH='/Users/aiman/.hunk/bin':"$PATH"
