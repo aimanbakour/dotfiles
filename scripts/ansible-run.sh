@@ -78,7 +78,7 @@ if [[ $NEED_ROOT -eq 1 && $EUID -ne 0 && -z "${ANSIBLE_RUN_ELEVATED:-}" ]]; then
   fi
 fi
 
-cmd=(uvx --from ansible-core ansible-playbook -i ansible/inventory.ini ansible/playbook.yml -e "user=${TARGET_USER}")
+cmd=(uvx --from ansible-core ansible-playbook -i ansible/inventory.ini ansible/playbook.yml -l local -e "user=${TARGET_USER}" -e ansible_python_interpreter=/usr/bin/python3)
 
 [[ -n "$TAGS" ]] && cmd+=(--tags "$TAGS")
 [[ -n "$SKIP_TAGS" ]] && cmd+=(--skip-tags "$SKIP_TAGS")

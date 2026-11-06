@@ -102,7 +102,7 @@ cd "$WORKDIR"
 
 # Run ansible-playbook using uvx (isolated, latest ansible-core)
 log "Running Ansible playbook (ansible-core via uvx) for user '$TARGET_USER'"
-uvx --from ansible-core ansible-playbook -i ansible/inventory.ini ansible/playbook.yml -e "user=$TARGET_USER"
+uvx --from ansible-core ansible-playbook -i ansible/inventory.ini ansible/playbook.yml -l local -e "user=$TARGET_USER" -e ansible_python_interpreter=/usr/bin/python3
 
 log "All set. If a new user was created, switch to it:"
 echo "  su - $TARGET_USER"
