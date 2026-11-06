@@ -289,3 +289,7 @@ fi
 
 # Added by the Hunk installer (https://hunk.dev)
 export PATH='/Users/aiman/.hunk/bin':"$PATH"
+export PATH=/opt/homebrew/opt/llvm/bin:$PATH
+
+# opencode
+export PATH=/Users/aiman/.opencode/bin:$PATH

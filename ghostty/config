@@ -1,12 +1,15 @@
-font-size = 20
+font-size = 18
 keybind = shift+enter=text:\n
 theme = Catppuccin Frappe
 cursor-click-to-move = false
 mouse-hide-while-typing = true
 macos-titlebar-style = hidden
 
-font-thicken = true
-font-synthetic-style = no-bold,no-italic,no-bold-italic
+#font-thicken = true
+#font-synthetic-style = no-bold,no-italic,no-bold-italic
+
+font-family = JetBrains Mono
+font-style = SemiBold
 
 window-padding-x = 0
 window-padding-y = 4

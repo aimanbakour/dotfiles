@@ -9,6 +9,9 @@ vim.opt.showbreak = "  ⤷ "
 vim.opt.textwidth = 80 -- Highlight long lines
 vim.opt.colorcolumn = "80" -- Show 80-char guide line
 
+-- Show AI (Copilot) suggestions as inline ghost text instead of in the blink menu
+vim.g.ai_cmp = false
+
 -- Disable lua language server to prevent warning
 -- vim.g.lazyvim_lua_ls = false
 

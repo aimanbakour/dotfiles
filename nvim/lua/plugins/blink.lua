@@ -6,7 +6,7 @@ return {
 	opts = function(_, opts)
 		opts.completion = {
 			menu = { auto_show = false },
-			ghost_text = { enabled = false },
+			-- ghost_text = { enabled = false },
 			accept = {
 				auto_brackets = {
 					enabled = true,
