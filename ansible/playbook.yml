@@ -29,8 +29,14 @@
       - imagemagick
       - poppler-utils
       - curl
-      - stow
       - xclip
+      # Shell tools (Debian 13+ ships versions new enough for .zshrc, e.g. `fzf --zsh`)
+      - fzf
+      - eza
+      - atuin
+      - unzip
+      - xz-utils
+      - ncurses-term
 
     # Locale configuration
     locale_lang: "en_US.UTF-8"
@@ -44,24 +50,30 @@
     sudo_group: sudo # Debian/Ubuntu default; adjust for other distros
     sudo_nopasswd: true # Always configure passwordless sudo by default
 
-    # Packages to stow with their targets
-    stow_map:
-      - { name: "zsh", target: "{{ home }}/.config/zsh" }
-      - { name: "nvim", target: "{{ home }}/.config/nvim" }
-      - { name: "tmux", target: "{{ home }}/.config/tmux" }
-      - { name: "starship", target: "{{ home }}/.config" }
-      - { name: "yazi", target: "{{ home }}/.config/yazi" }
-      - { name: "scripts", target: "{{ home }}/.local/scripts" }
+    # Symlinks into the repo, mirroring the macOS layout
+    # (src is relative to dotfiles_dir, dest is absolute)
+    link_map:
+      - { src: "zsh/.zshenv", dest: "{{ home }}/.zshenv" } # sets ZDOTDIR
+      - { src: "zsh", dest: "{{ home }}/.config/zsh" }
+      - { src: "nvim", dest: "{{ home }}/.config/nvim" }
+      - { src: "atuin", dest: "{{ home }}/.config/atuin" }
+      - { src: "yazi", dest: "{{ home }}/.config/yazi" }
+      - { src: "starship/starship.toml", dest: "{{ home }}/.config/starship.toml" }
+      # tmux: link only the file so plugins/ stays outside the repo
+      - { src: "tmux/tmux.conf", dest: "{{ home }}/.config/tmux/tmux.conf" }
+      - { src: "scripts", dest: "{{ home }}/.local/scripts" }
 
     # Yazi install settings (Debian/Ubuntu: install official binary)
     install_yazi: true
     # Prefer musl build to avoid GLIBC version mismatches on older distros
     yazi_libc: musl # musl | gnu
-    # Neovim install settings (install official binary)
+    # Neovim install settings (install official binary; LazyVim needs newer than apt's)
     install_neovim: true
-    # eza install settings (via Cargo)
-    install_eza: true
+    # rustup (zsh/.zshenv sources ~/.cargo/env unconditionally)
+    install_rust: true
     rust_profile: minimal
+    # Linuxbrew is optional now that apt provides fzf/eza/atuin
+    install_brew: false
     # Molten (Neovim notebooks) venv via uv
     install_molten: true
     molten_venv_dir: "{{ home }}/.local/virtualenvs"
@@ -145,6 +157,26 @@
       when: sudo_nopasswd | bool
       tags: [sudo]
 
+    # Ghostty's TERM (xterm-ghostty) isn't in Debian's ncurses; copy it from the
+    # controller when it has it (e.g. running this from a Mac with Ghostty)
+    - name: Read xterm-ghostty terminfo on controller
+      command: infocmp -x xterm-ghostty
+      delegate_to: localhost
+      become: false
+      register: ghostty_terminfo
+      changed_when: false
+      failed_when: false
+      tags: [terminfo]
+
+    - name: Install xterm-ghostty terminfo for user
+      shell: tic -x -
+      args:
+        stdin: "{{ ghostty_terminfo.stdout }}"
+        creates: "{{ home }}/.terminfo/x/xterm-ghostty"
+      become_user: "{{ user }}"
+      when: ghostty_terminfo.rc == 0
+      tags: [terminfo]
+
     - name: Symlink fd to fdfind for convenience
       file:
         src: /usr/bin/fdfind
@@ -154,70 +186,16 @@
       ignore_errors: true
       tags: [packages]
 
-    - name: Ensure tools for Yazi binary install
-      apt:
-        name:
-          - curl
-          - jq
-          - xz-utils
-          - unzip
-        state: present
-        update_cache: true
-        cache_valid_time: 3600
-      when: install_yazi
-      tags: [yazi, packages]
-
-    # eza via Cargo (Rust)
-    - name: Install build deps for Rust/Cargo (for eza)
-      apt:
-        name:
-          - build-essential
-          - pkg-config
-          - cmake
-          - libssl-dev
-          - zlib1g-dev
-        state: present
-        update_cache: true
-        cache_valid_time: 3600
-      when: install_eza
-      tags: [eza, packages]
-
-    - name: Install rustup for user if missing (for eza)
+    # rustup provides ~/.cargo/env, which zsh/.zshenv sources
+    - name: Install rustup for user if missing
       become_user: "{{ user }}"
       shell: |
         set -e
-        curl https://sh.rustup.rs -sSf | sh -s -- -y --profile {{ rust_profile }}
+        curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path --profile {{ rust_profile }}
       args:
         creates: "{{ home }}/.cargo/bin/rustup"
-      when: install_eza
-      tags: [eza]
-
-    - name: Ensure cargo in PATH for this run (for eza)
-      set_fact:
-        cargo_bin: "{{ home }}/.cargo/bin"
-      when: install_eza
-      tags: [eza]
-
-    - name: Install eza via Cargo
-      become_user: "{{ user }}"
-      shell: |
-        set -e
-        export PATH="{{ cargo_bin }}:$PATH"
-        cargo install --locked eza
-      args:
-        executable: /bin/bash
-        creates: "{{ home }}/.cargo/bin/eza"
-      when: install_eza
-      tags: [eza]
-
-    - name: Link eza binary into /usr/local/bin
-      file:
-        src: "{{ home }}/.cargo/bin/eza"
-        dest: "/usr/local/bin/eza"
-        state: link
-        force: true
-      when: install_eza
-      tags: [eza]
+      when: install_rust
+      tags: [rust]
 
     # Neovim (official binary)
     - name: Detect CPU arch for Neovim (dpkg)
@@ -274,6 +252,15 @@
       when: install_neovim
       tags: [neovim]
 
+    # --appimage-extract keeps the squashfs root at 0700, unreadable by users
+    - name: Make extracted Neovim readable by all users
+      file:
+        path: "/usr/local/nvim-appimage/squashfs-root"
+        mode: "u=rwX,go=rX"
+        recurse: true
+      when: install_neovim
+      tags: [neovim]
+
     - name: Ensure /usr/local/bin/nvim symlink
       file:
         src: "/usr/local/nvim-appimage/squashfs-root/usr/bin/nvim"
@@ -302,8 +289,8 @@
         arch='{{ yazi_arch }}'
         libc='{{ yazi_libc }}'
         api='https://api.github.com/repos/sxyazi/yazi/releases/latest'
-        # Find first matching asset for arch + unknown-linux-<libc>
-        url=$(curl -fsSL "$api" | jq -r ".assets[] | select((.name | test(\"$arch-unknown-linux-$libc\"))) | .browser_download_url" | head -n1)
+        # Find first matching archive for arch + unknown-linux-<libc> (skip .deb etc.)
+        url=$(curl -fsSL "$api" | jq -r ".assets[] | select((.name | test(\"$arch-unknown-linux-$libc[.](zip|tar[.]gz|tar[.]xz)$\"))) | .browser_download_url" | head -n1)
         if [ -z "$url" ]; then
           echo ""; exit 1
         fi
@@ -391,31 +378,19 @@
         mode: "0755"
       loop:
         - "{{ home }}/.config"
+        - "{{ home }}/.config/tmux"
+        - "{{ home }}/.local"
         - "{{ home }}/.cache/zsh"
         - "{{ home }}/.local/share/zsh"
-      tags: [directories, zsh]
+      tags: [directories, zsh, links]
 
-    - name: Copy wrapper .zshrc into $HOME
-      copy:
-        dest: "{{ home }}/.zshrc"
-        content: |
-          export ZDOTDIR="$HOME/.config/zsh"
-          [ -f "$ZDOTDIR/.zshrc" ] && source "$ZDOTDIR/.zshrc"
-        owner: "{{ user }}"
-        group: "{{ user }}"
-        mode: "0644"
-      tags: [zsh]
-
-    - name: Copy wrapper .zprofile into $HOME
-      copy:
-        dest: "{{ home }}/.zprofile"
-        content: |
-          export ZDOTDIR="$HOME/.config/zsh"
-          [ -f "$ZDOTDIR/.zprofile" ] && source "$ZDOTDIR/.zprofile"
-        owner: "{{ user }}"
-        group: "{{ user }}"
-        mode: "0644"
-      tags: [zsh]
+    # Superseded by ~/.zshenv -> zsh/.zshenv (which sets ZDOTDIR)
+    - name: Remove legacy wrapper ~/.zshrc and ~/.zprofile
+      file:
+        path: "{{ home }}/{{ item }}"
+        state: absent
+      loop: [".zshrc", ".zprofile"]
+      tags: [zsh, links]
 
     - name: Ensure dotfiles repo exists at {{ dotfiles_dir }}
       git:
@@ -426,16 +401,6 @@
       become_user: "{{ user }}"
       tags: [dotfiles]
 
-    - name: Ensure stow targets exist
-      file:
-        path: "{{ item.target }}"
-        state: directory
-        owner: "{{ user }}"
-        group: "{{ user }}"
-        mode: "0755"
-      loop: "{{ stow_map }}"
-      tags: [stow]
-
     - name: Install fzf-tab plugin (clone)
       git:
         repo: "https://github.com/Aloxaf/fzf-tab.git"
@@ -445,14 +410,16 @@
       become_user: "{{ user }}"
       tags: [plugins, zsh]
 
-    - name: Stow dotfiles packages
-      command: >-
-        stow --restow --target="{{ item.target }}" {{ item.name }}
-      args:
-        chdir: "{{ dotfiles_dir }}"
-      become_user: "{{ user }}"
-      loop: "{{ stow_map }}"
-      tags: [stow]
+    - name: Symlink dotfiles into place
+      file:
+        src: "{{ dotfiles_dir }}/{{ item.src }}"
+        dest: "{{ item.dest }}"
+        state: link
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        force: true
+      loop: "{{ link_map }}"
+      tags: [links]
 
     - name: Ensure legacy tmux config symlink (~/.tmux.conf)
       file:
@@ -462,6 +429,32 @@
         owner: "{{ user }}"
         group: "{{ user }}"
         force: true
+      tags: [tmux]
+
+    - name: Install tmux plugin manager (TPM)
+      git:
+        repo: "https://github.com/tmux-plugins/tpm"
+        dest: "{{ home }}/.config/tmux/plugins/tpm"
+        update: yes
+        version: master
+      become_user: "{{ user }}"
+      tags: [tmux]
+
+    # TPM reads @plugin options from a running server, so start a throwaway one
+    - name: Install tmux plugins via TPM
+      shell: |
+        set -e
+        tmux -L tpm-bootstrap -f "{{ home }}/.config/tmux/tmux.conf" new-session -d -s tpm
+        trap 'tmux -L tpm-bootstrap kill-server 2>/dev/null || true' EXIT
+        TMUX="$(tmux -L tpm-bootstrap display -p '#{socket_path},0,0')" \
+          "{{ home }}/.config/tmux/plugins/tpm/bin/install_plugins"
+      args:
+        executable: /bin/bash
+      environment:
+        TERM: xterm-256color
+      become_user: "{{ user }}"
+      register: tpm_install
+      changed_when: "'download success' in tpm_install.stdout"
       tags: [tmux]
 
     - name: Set login shell to zsh (if not already)
@@ -481,7 +474,9 @@
       become_user: "{{ user }}"
       shell: |
         set -e
-        curl -LsSf https://astral.sh/uv/install.sh | sh
+        # Stop the installer from appending to ~/.zshenv (a symlink into the repo);
+        # zsh/.zprofile already puts ~/.local/bin on PATH
+        curl -LsSf https://astral.sh/uv/install.sh | UV_NO_MODIFY_PATH=1 sh
       args:
         executable: /bin/bash
         creates: "{{ home }}/.local/bin/uv"
@@ -494,19 +489,9 @@
       args:
         executable: /bin/bash
         creates: "/home/linuxbrew/.linuxbrew/bin/brew"
-      when: ansible_system == 'Linux'
+      when: install_brew and ansible_system == 'Linux'
       tags: [packages, brew]
 
-    - name: Install fzf via Homebrew (Linux)
-      become_user: "{{ user }}"
-      shell: |
-        set -e
-        /home/linuxbrew/.linuxbrew/bin/brew install fzf
-      args:
-        executable: /bin/bash
-        creates: "/home/linuxbrew/.linuxbrew/bin/fzf"
-      when: ansible_system == 'Linux'
-      tags: [packages, brew, fzf]
     - name: Ensure molten venv root exists
       file:
         path: "{{ molten_venv_dir }}"
@@ -522,21 +507,21 @@
       shell: |
         set -e
         cd "{{ molten_venv_dir }}"
-        uv venv "{{ molten_venv_name }}"
+        "{{ home }}/.local/bin/uv" venv "{{ molten_venv_name }}"
       args:
         executable: /bin/bash
         creates: "{{ molten_venv_path }}/bin/python"
       when: install_molten
       tags: [molten, neovim, python]
 
+    # uv venvs have no pip, so install with `uv pip`
     - name: Install Python packages into molten venv
       become_user: "{{ user }}"
-      pip:
-        name:
-          - pynvim
-          - jupyter-client
-        state: present
-        executable: "{{ molten_venv_path }}/bin/pip"
+      command: >-
+        {{ home }}/.local/bin/uv pip install --python {{ molten_venv_path }}/bin/python
+        pynvim jupyter-client
+      register: molten_pip
+      changed_when: "'Installed' in molten_pip.stderr"
       when: install_molten
       tags: [molten, neovim, python]
 
